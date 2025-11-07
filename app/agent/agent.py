@@ -3,20 +3,23 @@ import time
 import os
 from pathlib import Path
 from typing import List, Dict, Optional
+from wallet import CDPWallet
 
 
 class BountyAgent:
     def __init__(self, mock_bounties_path: Optional[str] = None):
-        """Initialize the agent with bounty sources"""
         agent_dir = Path(__file__).parent
         self.mock_bounties_path = mock_bounties_path or str(
             agent_dir / "bounties" / "mock_bounties.json"
         )
         self.discovered_bounties: List[Dict] = []
         self.min_reward_threshold = 500000
+        
+        self.wallet = CDPWallet()
+        self.wallet.configure()
+        self.wallet.create_or_load_wallet()
 
     def load_mock_bounties(self) -> List[Dict]:
-        """Load bounties from mock JSON file"""
         try:
             with open(self.mock_bounties_path, 'r') as f:
                 bounties = json.load(f)
@@ -30,7 +33,6 @@ class BountyAgent:
             return []
 
     def filter_bounties(self, bounties: List[Dict]) -> List[Dict]:
-        """Filter bounties by reward threshold and status"""
         filtered = []
         for bounty in bounties:
             if bounty.get("status", "").lower() != "open":
@@ -41,10 +43,8 @@ class BountyAgent:
         return filtered
 
     def discover_bounties(self) -> List[Dict]:
-        """Discover bounties from all sources"""
         all_bounties = []
         
-        # Mock JSON feed
         mock_bounties = self.load_mock_bounties()
         all_bounties.extend(mock_bounties)
         
@@ -64,7 +64,6 @@ class BountyAgent:
         return unique_bounties
 
     def select_bounty(self, bounties: List[Dict]) -> Optional[Dict]:
-        """Select the highest-value relevant bounty"""
         if not bounties:
             return None
 
@@ -72,8 +71,17 @@ class BountyAgent:
         return sorted_bounties[0]
 
     def scan_loop(self, interval_seconds: int = 300):
-        """Main scanning loop - polls for bounties every interval"""
         print("BountyBot Agent started")
+        
+        wallet_address = self.wallet.get_address()
+        if wallet_address:
+            print(f"Wallet address: {wallet_address}")
+            balance = self.wallet.get_balance()
+            if balance:
+                print(f"Balance: {balance}")
+        else:
+            print("Wallet not initialized")
+        
         print(f"Scanning every {interval_seconds} seconds...")
         print(f"Minimum reward threshold: {self.min_reward_threshold} lamports\n")
         
@@ -116,13 +124,9 @@ class BountyAgent:
 
 
 def main():
-    """Entry point"""
     agent = BountyAgent()
-
-    # Change to 300s for production
     agent.scan_loop(interval_seconds=5)
 
 
 if __name__ == "__main__":
     main()
-
