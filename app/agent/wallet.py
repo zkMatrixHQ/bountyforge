@@ -1,25 +1,27 @@
 import os
+import asyncio
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 
 try:
-    from cdp import Cdp, Wallet
+    from cdp import CdpClient
 except ImportError:
-    Cdp = None
-    Wallet = None
+    CdpClient = None
 
 load_dotenv(Path(__file__).parent / ".env")
 
 class CDPWallet:
-    def __init__(self, api_key_id: Optional[str] = None, api_key_secret: Optional[str] = None):
+    def __init__(self, api_key_id: Optional[str] = None, api_key_secret: Optional[str] = None, wallet_secret: Optional[str] = None):
         self.api_key_id = api_key_id or os.getenv("CDP_API_KEY_ID")
         self.api_key_secret = api_key_secret or os.getenv("CDP_API_KEY_SECRET")
+        self.wallet_secret = wallet_secret or os.getenv("CDP_WALLET_SECRET")
+        self.client = None
         self.wallet = None
         self._configured = False
         
     def configure(self) -> bool:
-        if Cdp is None:
+        if CdpClient is None:
             print("cdp-sdk not installed. Run: pip install cdp-sdk")
             return False
         
@@ -29,7 +31,11 @@ class CDPWallet:
                 print("Get credentials from: https://portal.cdp.coinbase.com/projects/api-keys")
                 return False
             
-            Cdp.configure(self.api_key_id, self.api_key_secret)
+            self.client = CdpClient(
+                api_key_id=self.api_key_id,
+                api_key_secret=self.api_key_secret,
+                wallet_secret=self.wallet_secret
+            )
             self._configured = True
             print("CDP SDK configured successfully")
             return True
@@ -42,27 +48,19 @@ class CDPWallet:
             if not self.configure():
                 return False
         
-        if Wallet is None:
+        if CdpClient is None:
             print("cdp-sdk not installed. Run: pip install cdp-sdk")
             return False
         
         try:
             if wallet_id:
-                self.wallet = Wallet.load(wallet_id)
+                self.wallet = asyncio.run(self.client.solana.get_account(wallet_id))
                 print(f"Loaded existing wallet: {wallet_id}")
             else:
-                self.wallet = Wallet.create()
+                self.wallet = asyncio.run(self.client.solana.create_account())
                 print("Wallet created")
-                print(f"Wallet ID: {self.wallet.id}")
-                print(f"Public address: {self.wallet.default_address}")
-                
-                if hasattr(self.wallet, 'public_key'):
-                    print(f"Public key: {self.wallet.public_key}")
-                
-                if hasattr(self.wallet, 'private_key'):
-                    print(f"Private key: {self.wallet.private_key}")
-                elif hasattr(self.wallet, 'seed'):
-                    print(f"Seed: {self.wallet.seed}")
+                print(f"Wallet name: {self.wallet.name}")
+                print(f"Public address: {self.wallet.address}")
             
             return True
         except Exception as e:
@@ -71,14 +69,15 @@ class CDPWallet:
     
     def get_address(self) -> Optional[str]:
         if self.wallet:
-            return self.wallet.default_address
+            return self.wallet.address
         return None
     
     def get_balance(self) -> Optional[dict]:
-        if not self.wallet:
+        if not self.wallet or not self.client:
             return None
         try:
-            return self.wallet.balance()
+            balances = asyncio.run(self.client.solana.list_token_balances(self.wallet.address))
+            return balances
         except Exception as e:
             print(f"Error getting balance: {e}")
             return None
