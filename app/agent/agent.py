@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import List, Dict, Optional
 from wallet import CDPWallet
+from mcp import MalloryMCP
+from x402 import X402Gateway
 
 
 class BountyAgent:
@@ -18,6 +20,9 @@ class BountyAgent:
         self.wallet = CDPWallet()
         self.wallet.configure()
         self.wallet.create_or_load_wallet()
+        
+        self.mcp = MalloryMCP()
+        self.x402 = X402Gateway()
 
     def load_mock_bounties(self) -> List[Dict]:
         try:
@@ -104,8 +109,29 @@ class BountyAgent:
                         print(f"   Reward: {selected.get('reward')} lamports")
                         print(f"   Skills: {', '.join(selected.get('skills', []))}")
                         
-                        # TODO: Reason via Mallory MCP
-                        # TODO: Pay x402 for resources
+                        reason_result = self.mcp.reason(selected.get('description', ''))
+                        if reason_result:
+                            print(f"\nReasoning: {reason_result.get('reasoning')}")
+                            print(f"Needs: {', '.join(reason_result.get('needs', []))}")
+                            print(f"Plan: {reason_result.get('plan')}")
+                            
+                            needs = reason_result.get('needs', [])
+                            if 'switchboard_oracle' in needs:
+                                print("\nPaying for Switchboard oracle access...")
+                                price_data = self.x402.pay_for_switchboard(0.01)
+                                if price_data:
+                                    print(f"Received price data: {price_data}")
+                            elif 'code_analysis' in needs:
+                                print("\nPaying for LLM code analysis...")
+                                llm_result = self.x402.pay_for_llm(0.01)
+                                if llm_result:
+                                    print(f"LLM analysis: {llm_result}")
+                            elif 'data_analysis' in needs:
+                                print("\nPaying for data API access...")
+                                data_result = self.x402.pay_for_data(0.01)
+                                if data_result:
+                                    print(f"Data result: {data_result}")
+                        
                         # TODO: Generate solution
                         # TODO: Attest solution
                         # TODO: Submit to bounty
