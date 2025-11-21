@@ -8,3 +8,5 @@ test-ledger
 PLAN.md
 venv/
 .env
+gateway/.env
+gateway/dist
