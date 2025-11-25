@@ -1,9 +1,16 @@
 use anchor_lang::prelude::*;
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum BountyType {
+    WalletIntelligence,
+    TokenScreening,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct Bounty {
     pub id: u64,
+    pub bounty_type: BountyType,
     #[max_len(50)]
     pub description: String,
     pub reward: u64, // lamports

@@ -51,6 +51,7 @@ describe("post_bounty", () => {
     await ctx.program.methods
       .postBounty(
         new anchor.BN(bountyId),
+        { walletIntelligence: {} },
         description,
         new anchor.BN(reward)
       )
@@ -96,6 +97,7 @@ describe("post_bounty", () => {
       await ctx.program.methods
         .postBounty(
           new anchor.BN(bountyId),
+          { walletIntelligence: {} },
           "Expensive bounty",
           new anchor.BN(reward)
         )
@@ -137,6 +139,7 @@ describe("post_bounty", () => {
       await ctx.program.methods
         .postBounty(
           new anchor.BN(bountyId),
+          { walletIntelligence: {} },
           "Test bounty",
           new anchor.BN(100 * 10 ** 6)
         )
@@ -170,6 +173,7 @@ describe("post_bounty", () => {
       await ctx.program.methods
         .postBounty(
           new anchor.BN(bountyId),
+          { walletIntelligence: {} },
           "Test bounty",
           new anchor.BN(100 * 10 ** 6)
         )
@@ -222,7 +226,7 @@ describe("post_bounty", () => {
     );
 
     await ctx.program.methods
-      .postBounty(new anchor.BN(bountyId1), "Bounty 1", new anchor.BN(reward))
+      .postBounty(new anchor.BN(bountyId1), { walletIntelligence: {} }, "Bounty 1", new anchor.BN(reward))
       .accountsPartial({
         creator: ctx.creator.publicKey,
         bounty: bountyPda1,
@@ -236,7 +240,7 @@ describe("post_bounty", () => {
       .rpc();
 
     await ctx.program.methods
-      .postBounty(new anchor.BN(bountyId2), "Bounty 2", new anchor.BN(reward))
+      .postBounty(new anchor.BN(bountyId2), { walletIntelligence: {} }, "Bounty 2", new anchor.BN(reward))
       .accountsPartial({
         creator: ctx.creator.publicKey,
         bounty: bountyPda2,
