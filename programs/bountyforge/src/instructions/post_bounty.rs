@@ -1,8 +1,8 @@
 use crate::constants::ANCHOR_DISCRIMINATOR;
-use crate::state::{Bounty, BountyStatus};
+use crate::state::{Bounty, BountyStatus, BountyType};
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::{get_associated_token_address, AssociatedToken};
 use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
-use anchor_spl::associated_token::{AssociatedToken, get_associated_token_address};
 
 #[derive(Accounts)]
 #[instruction(bounty_id: u64)]
@@ -45,6 +45,7 @@ impl<'info> PostBounty<'info> {
     pub fn post_bounty(
         &mut self,
         bounty_id: u64,
+        bounty_type: BountyType,
         description: String,
         reward: u64,
         bumps: &PostBountyBumps,
@@ -52,6 +53,7 @@ impl<'info> PostBounty<'info> {
         // 1. init bounty account
         self.bounty.set_inner(Bounty {
             id: bounty_id,
+            bounty_type,
             description,
             reward,
             solution_hash: None,
@@ -63,7 +65,9 @@ impl<'info> PostBounty<'info> {
         // 2. Create associated token account for bounty PDA if it doesn't exist
         let expected_ata = get_associated_token_address(&self.bounty.key(), &self.usdc_mint.key());
         if self.bounty_token_account.key() != expected_ata {
-            return Err(anchor_lang::error!(anchor_lang::error::ErrorCode::ConstraintTokenMint));
+            return Err(anchor_lang::error!(
+                anchor_lang::error::ErrorCode::ConstraintTokenMint
+            ));
         }
 
         // 3. transfering USDC from creator to bounty PDA token account (escrow)

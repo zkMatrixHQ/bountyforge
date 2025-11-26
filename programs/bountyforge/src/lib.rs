@@ -15,11 +15,12 @@ pub mod bountyforge {
     pub fn post_bounty(
         ctx: Context<PostBounty>,
         bounty_id: u64,
+        bounty_type: state::BountyType,
         description: String,
         reward: u64,
     ) -> Result<()> {
         ctx.accounts
-            .post_bounty(bounty_id, description, reward, &ctx.bumps)
+            .post_bounty(bounty_id, bounty_type, description, reward, &ctx.bumps)
     }
 
     pub fn attest_solution(

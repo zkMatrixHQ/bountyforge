@@ -220,8 +220,11 @@ class BountyForgeClient:
                         account_data = program.coder.accounts.decode("Bounty", account_info.account.data)
                         
                         if account_data.status == 0:
+                            # Convert bounty_type enum to string
+                            bounty_type_str = "wallet_intelligence" if account_data.bounty_type == 0 else "token_screening"
                             bounties.append({
                                 "id": account_data.id,
+                                "bounty_type": bounty_type_str,
                                 "description": account_data.description,
                                 "reward": account_data.reward,
                                 "status": "open",

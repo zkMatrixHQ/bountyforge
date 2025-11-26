@@ -1,11 +1,28 @@
 # BountyForge - Setup Guide
 
+## Quick Start
+
+```bash
+# 1. Install dependencies
+yarn install
+
+# 2. Configure API keys (see Step 2 below)
+
+# 3. Start everything
+yarn start
+```
+
+That's it! The dashboard will be available at http://localhost:3000
+
+---
+
 ## Prerequisites
 
 - Node.js 18+ and npm/yarn
 - Python 3.10+ and pip
 - Rust and Anchor CLI
 - Solana CLI (for devnet)
+- Bun (for Mallory MCP server)
 
 ---
 
@@ -61,38 +78,36 @@ pip install -r requirements.txt
 
 ---
 
-## Step 4: Start Services
+## Step 4: Start All Services
 
-### Terminal 1: Mallory MCP Server
+**One command starts everything:**
+
 ```bash
-cd app/mallory/apps/server
-npm install
-npm run dev
-# Runs on http://localhost:3001
+# From the root directory
+yarn start
+# or
+npm start
 ```
 
-### Terminal 2: x402 Gateway
-```bash
-cd app/gateway
-npm install
-npm run dev
-# Runs on http://localhost:3002
-```
+This will automatically:
+- ✅ Check if Anchor build is needed (runs if IDL missing)
+- ✅ Start Mallory MCP Server (port 3001)
+- ✅ Start x402 Gateway (port 3002)
+- ✅ Start Agent API Server (port 3003)
+- ✅ Start Dashboard (port 3000)
 
-### Terminal 3: Agent Service
-```bash
-cd app/agent
-source venv/bin/activate
-python3 api_server.py
-# Runs on http://localhost:3003
-```
+All services run in parallel with color-coded logs. Press `Ctrl+C` to stop all services.
 
-### Terminal 4: Dashboard
+**Note:** Make sure you've installed dependencies in each service directory first:
 ```bash
-cd app/dashboard
-npm install
-npm run dev
-# Runs on http://localhost:3000
+# Install root dependencies
+yarn install
+
+# Install service dependencies (one-time setup)
+cd app/mallory/apps/server && npm install && cd ../../../../..
+cd app/gateway && npm install && cd ../..
+cd app/dashboard && npm install && cd ../..
+cd app/agent && pip install -r requirements.txt && cd ../..
 ```
 
 ---

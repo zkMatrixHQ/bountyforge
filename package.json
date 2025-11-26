@@ -3,7 +3,8 @@
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "post-bounties": "tsx scripts/post-bounties.ts"
+    "post-bounties": "tsx scripts/post-bounties.ts",
+    "start": "tsx scripts/start.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

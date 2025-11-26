@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import { IdlTypes, Program } from "@coral-xyz/anchor";
 import { Bountyforge } from "../target/types/bountyforge";
 import {
     TOKEN_PROGRAM_ID,
@@ -196,11 +196,15 @@ export function generateSolutionHashWithValue(value: number): Buffer {
     return Buffer.from(Array.from({ length: 32 }, () => value));
 }
 
+type BountyTypeEnum = IdlTypes<Bountyforge>["bountyType"];
+const DEFAULT_BOUNTY_TYPE: BountyTypeEnum = { walletIntelligence: {} };
+
 export async function postBounty(
     ctx: TestContext,
     bountyId: number,
     description: string,
-    reward: number
+    reward: number,
+    bountyType: BountyTypeEnum = DEFAULT_BOUNTY_TYPE
 ): Promise<anchor.web3.PublicKey> {
     const [bountyPda] = deriveBountyPda(ctx.program.programId, bountyId);
     const bountyTokenAccount = getAssociatedTokenAddressSync(
@@ -216,7 +220,7 @@ export async function postBounty(
     );
 
     await ctx.program.methods
-        .postBounty(new anchor.BN(bountyId), description, new anchor.BN(reward))
+        .postBounty(new anchor.BN(bountyId), bountyType, description, new anchor.BN(reward))
         .accountsPartial({
             creator: ctx.creator.publicKey,
             bounty: bountyPda,
