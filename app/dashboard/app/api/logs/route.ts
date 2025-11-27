@@ -6,12 +6,11 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get('limit') || '100';
-    
+
     const response = await fetch(`${AGENT_API_URL}/logs?limit=${limit}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {
@@ -19,13 +18,22 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    return NextResponse.json({ logs: data.logs || [] });
+    return NextResponse.json({
+      logs: data.logs || [],
+      count: (data.logs || []).length,
+      source: 'agent'
+    });
   } catch (error) {
-    console.error('Error fetching logs:', error);
-    return NextResponse.json({ 
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error fetching logs:', errorMessage);
+
+    return NextResponse.json({
+      logs: [],
+      count: 0,
+      source: 'error',
       error: 'Failed to fetch logs',
-      logs: []
-    }, { status: 500 });
+      message: errorMessage
+    });
   }
 }
 
