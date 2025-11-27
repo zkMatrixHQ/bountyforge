@@ -1,23 +1,34 @@
 [
   {
     "id": 1,
-    "description": "Solve Solana puzzle: Calculate the average SOL/USD price over the last 24 hours using Switchboard oracle data",
+    "bounty_type": "wallet_intelligence",
+    "description": "Analyze wallet 7xKXtg2CmPd... and identify if smart money based on trading patterns",
     "reward": 1000000,
-    "skills": ["oracle", "data"],
+    "skills": ["wallet_analysis", "smart_money"],
     "status": "open"
   },
   {
     "id": 2,
-    "description": "Debug smart contract: Find and fix the overflow bug in the token transfer function",
+    "bounty_type": "token_screening",
+    "description": "Find top 5 tokens by smart money inflows in the last 24 hours",
     "reward": 2000000,
-    "skills": ["debugging", "smart-contracts"],
+    "skills": ["token_screening", "flow_analysis"],
     "status": "open"
   },
   {
     "id": 3,
-    "description": "Data analysis: Analyze transaction patterns from the last 7 days and identify anomalies",
+    "bounty_type": "wallet_intelligence",
+    "description": "Calculate risk score for wallet Y based on transaction patterns and counterparty analysis",
     "reward": 1500000,
-    "skills": ["data", "analysis"],
+    "skills": ["risk_analysis", "pattern_recognition"],
+    "status": "open"
+  },
+  {
+    "id": 4,
+    "bounty_type": "token_screening",
+    "description": "Screen tokens with volume > $1M and holder growth > 20% in the past week",
+    "reward": 1800000,
+    "skills": ["volume_analysis", "holder_metrics"],
     "status": "open"
   }
 ]

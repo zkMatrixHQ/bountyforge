@@ -9,9 +9,35 @@ interface Reputation {
   total_earned: number;
 }
 
+interface ReputationResponse {
+  reputation: Reputation;
+  agent_address?: string;
+  message?: string;
+}
+
 export default function ReputationScore() {
   const [reputation, setReputation] = useState<Reputation | null>(null);
+  const [agentAddress, setAgentAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const copyAddress = async () => {
+    if (!agentAddress) return;
+    try {
+      await navigator.clipboard.writeText(agentAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = agentAddress;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     fetchReputation();
@@ -23,67 +49,103 @@ export default function ReputationScore() {
     try {
       const response = await fetch('/api/reputation');
       if (response.ok) {
-        const data = await response.json();
+        const data: ReputationResponse = await response.json();
         setReputation(data.reputation);
+        setAgentAddress(data.agent_address || null);
       }
-    } catch (error) {
-      console.error('Error fetching reputation:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatLamports = (lamports: number) => {
+  const formatUSDC = (lamports: number) => {
     return (lamports / 1_000_000).toFixed(2);
   };
 
-  if (isLoading) {
-    return <div className="text-gray-500 text-sm">Loading...</div>;
-  }
+  const truncateAddress = (address: string) => {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
 
-  if (!reputation) {
+  if (isLoading) {
     return (
-      <div className="text-gray-400 text-sm">
-        <p>No reputation data</p>
-        <p className="text-xs mt-2">Reputation is created when the agent submits its first solution</p>
+      <div className="border-2 border-black bg-card p-6">
+        <div className="animate-pulse space-y-3">
+          <div className="h-4 bg-gray-200 rounded w-1/2" />
+          <div className="h-8 bg-gray-200 rounded w-1/3" />
+        </div>
       </div>
     );
   }
 
-  const hasNoActivity = reputation.score === 0 && 
-    reputation.successful_bounties === 0 && 
-    reputation.failed_bounties === 0;
+  const score = reputation?.score || 0;
+  const successRate = reputation && (reputation.successful_bounties + reputation.failed_bounties) > 0
+    ? Math.round((reputation.successful_bounties / (reputation.successful_bounties + reputation.failed_bounties)) * 100)
+    : 0;
 
   return (
-    <div className="space-y-4">
-      {hasNoActivity && (
-        <div className="border-2 border-black p-4 bg-white text-xs text-gray-600">
-          <p className="mb-2">No on-chain activity yet.</p>
-          <p>Reputation will appear after the agent submits solutions to bounties.</p>
+    <div className="border-2 border-black bg-card">
+      <div className="p-4 border-b-2 border-black">
+        <div className="flex items-center justify-between">
+          <span className="text-xs uppercase tracking-wide text-gray-600">Reputation</span>
+          {agentAddress && (
+            <button
+              onClick={copyAddress}
+              className="text-xs font-mono text-gray-400 hover:text-black transition-colors cursor-pointer flex items-center gap-1"
+              title="Click to copy"
+            >
+              {copied ? (
+                <>
+                  <span className="text-green-600">✓</span>
+                  <span className="text-green-600">Copied</span>
+                </>
+              ) : (
+                <>
+                  {truncateAddress(agentAddress)}
+                  <span className="text-gray-300">⎘</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="p-6 text-center border-b border-gray-200">
+        <div className="text-5xl font-light text-black mb-1">{score}</div>
+        <div className="text-xs text-gray-500">Total Score</div>
+      </div>
+
+      <div className="grid grid-cols-3 divide-x divide-gray-200">
+        <div className="p-4 text-center">
+          <div className="text-lg font-medium text-green-600">
+            {reputation?.successful_bounties || 0}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Won</div>
+        </div>
+        <div className="p-4 text-center">
+          <div className="text-lg font-medium text-gray-400">
+            {reputation?.failed_bounties || 0}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Failed</div>
+        </div>
+        <div className="p-4 text-center">
+          <div className="text-lg font-medium text-black">
+            {successRate}%
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Rate</div>
+        </div>
+      </div>
+
+      {reputation && reputation.total_earned > 0 && (
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Total Earned</span>
+            <span className="text-sm font-medium text-black">
+              ${formatUSDC(reputation.total_earned)}
+            </span>
+          </div>
         </div>
       )}
-      <div className="border-2 border-black p-6 text-center bg-white">
-        <div className="text-4xl font-normal text-black mb-2">{reputation.score}</div>
-        <div className="text-xs text-gray-600 uppercase tracking-wide">Score</div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="border-2 border-black p-4 bg-white">
-          <div className="text-xl font-normal text-black">{reputation.successful_bounties}</div>
-          <div className="text-xs text-gray-600 mt-1">Successful</div>
-        </div>
-        <div className="border-2 border-black p-4 bg-white">
-          <div className="text-xl font-normal text-black">{reputation.failed_bounties}</div>
-          <div className="text-xs text-gray-600 mt-1">Failed</div>
-        </div>
-      </div>
-
-      <div className="border-2 border-black p-4 bg-white">
-        <div className="text-base font-normal text-black">
-          {formatLamports(reputation.total_earned)} SOL
-        </div>
-        <div className="text-xs text-gray-600 mt-1">Total Earned</div>
-      </div>
     </div>
   );
 }

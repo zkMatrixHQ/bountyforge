@@ -1,12 +1,26 @@
 @import "tailwindcss";
 
+:root {
+  --bg-primary: #f5f3f0;
+  --bg-card: #fdfcfb;
+  --border-color: #1a1a1a;
+}
+
 body {
   font-family: 'Lucida Console', monospace;
-  background-color: #fafafa;
+  background-color: var(--bg-primary);
   color: #1a1a1a;
   font-weight: 400;
 }
 
 * {
   font-family: 'Lucida Console', monospace;
+}
+
+.bg-page {
+  background-color: var(--bg-primary);
+}
+
+.bg-card {
+  background-color: var(--bg-card);
 }
