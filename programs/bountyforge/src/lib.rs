@@ -6,7 +6,7 @@ mod constants;
 mod errors;
 mod instructions;
 mod state;
-declare_id!("DUYYaLDvkWfFYKB8HshseMi6f5X9ShxaydsfrJLrkGMM");
+declare_id!("9Y6Z41eWLsfc8kY73WLBNeRN1NuiTBuMoADEecXGKnpZ");
 
 #[program]
 pub mod bountyforge {

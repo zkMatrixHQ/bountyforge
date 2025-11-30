@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-bountyforge = "DUYYaLDvkWfFYKB8HshseMi6f5X9ShxaydsfrJLrkGMM"
+bountyforge = "9Y6Z41eWLsfc8kY73WLBNeRN1NuiTBuMoADEecXGKnpZ"
 
 [programs.devnet]
-bountyforge = "DUYYaLDvkWfFYKB8HshseMi6f5X9ShxaydsfrJLrkGMM"
+bountyforge = "9Y6Z41eWLsfc8kY73WLBNeRN1NuiTBuMoADEecXGKnpZ"
 
 [registry]
 url = "https://api.apr.dev"
