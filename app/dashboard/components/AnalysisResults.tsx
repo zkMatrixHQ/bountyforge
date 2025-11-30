@@ -25,6 +25,7 @@ export default function AnalysisResults() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchAnalysis();
@@ -46,6 +47,27 @@ export default function AnalysisResults() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const copyAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = address;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const truncateAddress = (address: string) => {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
   if (isLoading) {
@@ -75,8 +97,26 @@ export default function AnalysisResults() {
         <div className="space-y-3">
           {analysis.wallet && (
             <div className="border-2 border-black p-3">
-              <div className="text-xs text-gray-500 mb-1">Wallet</div>
-              <div className="text-sm font-mono text-black">{analysis.wallet}</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-gray-500">Wallet</div>
+                <button
+                  onClick={() => copyAddress(analysis.wallet!)}
+                  className="text-xs font-mono text-gray-400 hover:text-black transition-colors cursor-pointer flex items-center gap-1"
+                  title="Click to copy"
+                >
+                  {copied ? (
+                    <>
+                      <span className="text-green-600">✓</span>
+                      <span className="text-green-600">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      {truncateAddress(analysis.wallet)}
+                      <span className="text-gray-300">⎘</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
 
