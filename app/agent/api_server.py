@@ -37,9 +37,12 @@ def get_bounties():
 @app.route('/reputation', methods=['GET'])
 def get_reputation():
     agent_address = request.args.get('address')
-    # If no address provided, use signing address from service
     if not agent_address:
         agent_address = service.signing_address
+        if not agent_address:
+            agent_address = service.get_signing_address_from_keypair()
+            if agent_address:
+                service.signing_address = agent_address
     
     if not agent_address:
         return jsonify({
@@ -76,6 +79,11 @@ def get_status():
 def get_wallet():
     cdp_address = service.wallet_address
     signing_address = service.signing_address
+    
+    if not signing_address:
+        signing_address = service.get_signing_address_from_keypair()
+        if signing_address:
+            service.signing_address = signing_address
     
     if cdp_address or signing_address:
         return jsonify({

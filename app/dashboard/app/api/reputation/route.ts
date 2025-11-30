@@ -50,11 +50,21 @@ export async function GET() {
 
     if (response.ok) {
       const data = await response.json();
+      const reputation = data.reputation || DEFAULT_REPUTATION;
+
+      const hasReputation = reputation.score > 0 ||
+        reputation.successful_bounties > 0 ||
+        reputation.failed_bounties > 0;
+
       return NextResponse.json({
-        reputation: data.reputation || DEFAULT_REPUTATION,
+        reputation,
         agent_address: agentAddress,
         wallet_source: walletSource,
-        source: 'agent'
+        source: 'agent',
+        has_reputation: hasReputation,
+        message: !hasReputation ?
+          'Reputation will appear after bounties are settled on-chain. Submissions alone do not update reputation.' :
+          undefined
       });
     }
 
@@ -63,7 +73,8 @@ export async function GET() {
       agent_address: agentAddress,
       wallet_source: walletSource,
       source: 'default',
-      warning: `Agent returned ${response.status}`
+      warning: `Agent returned ${response.status}`,
+      has_reputation: false
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -74,7 +85,8 @@ export async function GET() {
       agent_address: agentAddress,
       wallet_source: walletSource,
       source: 'error',
-      error: errorMessage
+      error: errorMessage,
+      has_reputation: false
     });
   }
 }

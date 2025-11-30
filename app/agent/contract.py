@@ -243,22 +243,21 @@ class BountyForgeClient:
             return []
     
     async def get_reputation(self, agent_address: str) -> Optional[Dict]:
+        """
+        Get reputation for an agent address. Works even without IDL by using raw account data.
+        """
         try:
             from solders.pubkey import Pubkey
-            from anchorpy import Program, Provider
             from solana.rpc.async_api import AsyncClient
             import os
+            import struct
             
             rpc_url = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
             client = AsyncClient(rpc_url)
             
             program_id = Pubkey.from_string(self.program_id)
-            provider = Provider(client, None)
             
             try:
-                # Fetch IDL from chain
-                program = await Program.at(program_id, provider)
-                
                 agent_pubkey = Pubkey.from_string(agent_address)
                 seeds = [b"rep", bytes(agent_pubkey)]
                 rep_pda, _ = Pubkey.find_program_address(seeds, program_id)
@@ -276,16 +275,59 @@ class BountyForgeClient:
                         "total_earned": 0
                     }
                 
-                rep_data = program.coder.accounts.decode("Reputation", account_info.value.data)
-                
-                return {
-                    "score": rep_data.score,
-                    "successful_bounties": rep_data.successful_bounties,
-                    "failed_bounties": rep_data.failed_bounties,
-                    "total_earned": rep_data.total_earned
-                }
+                # Try to decode using IDL if available
+                try:
+                    from anchorpy import Program, Provider
+                    provider = Provider(client, None)
+                    program = await Program.at(program_id, provider)
+                    rep_data = program.coder.accounts.decode("Reputation", account_info.value.data)
+                    return {
+                        "score": rep_data.score,
+                        "successful_bounties": rep_data.successful_bounties,
+                        "failed_bounties": rep_data.failed_bounties,
+                        "total_earned": rep_data.total_earned
+                    }
+                except Exception as idl_error:
+                    # Fallback: decode raw account data (assuming standard Anchor account layout)
+                    # Anchor accounts start with 8-byte discriminator, then the data
+                    print(f"IDL not available, using raw account data decoding: {idl_error}")
+                    account_data = account_info.value.data
+                    
+                    if len(account_data) < 8:
+                        print(f"Account data too short: {len(account_data)} bytes")
+                        return {
+                            "score": 0,
+                            "successful_bounties": 0,
+                            "failed_bounties": 0,
+                            "total_earned": 0
+                        }
+                    
+                    # Skip 8-byte discriminator, then read: u64 score, u64 successful, u64 failed, u64 total_earned
+                    # Assuming little-endian u64 values
+                    data = account_data[8:]  # Skip discriminator
+                    if len(data) >= 32:  # 4 * 8 bytes = 32 bytes
+                        score = struct.unpack('<Q', data[0:8])[0]  # u64
+                        successful = struct.unpack('<Q', data[8:16])[0]  # u64
+                        failed = struct.unpack('<Q', data[16:24])[0]  # u64
+                        total_earned = struct.unpack('<Q', data[24:32])[0]  # u64
+                        return {
+                            "score": score,
+                            "successful_bounties": successful,
+                            "failed_bounties": failed,
+                            "total_earned": total_earned
+                        }
+                    else:
+                        print(f"Account data too short for reputation struct: {len(data)} bytes")
+                        return {
+                            "score": 0,
+                            "successful_bounties": 0,
+                            "failed_bounties": 0,
+                            "total_earned": 0
+                        }
             except Exception as e:
                 print(f"Error fetching reputation: {e}")
+                import traceback
+                traceback.print_exc()
                 return {
                     "score": 0,
                     "successful_bounties": 0,
@@ -294,5 +336,7 @@ class BountyForgeClient:
                 }
         except Exception as e:
             print(f"Error initializing reputation query: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
