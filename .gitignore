@@ -10,3 +10,5 @@ venv/
 .env
 gateway/.env
 gateway/dist
+app/agent/venv/
+app/agent/__pycache__/
