@@ -1,6 +1,7 @@
 import requests
 from typing import Dict, Optional
 
+
 class MalloryMCP:
     def __init__(self, base_url: str = "http://localhost:3001"):
         self.base_url = base_url
@@ -18,6 +19,5 @@ class MalloryMCP:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"Error calling Mallory MCP: {e}")
+            print(f"MCP error: {e}")
             return None
-

@@ -5,9 +5,11 @@ import AgentLogs from '@/components/AgentLogs';
 import BountiesView from '@/components/BountiesView';
 import ReputationScore from '@/components/ReputationScore';
 import TriggerAgent from '@/components/TriggerAgent';
+import PaymentLedger from '@/components/PaymentLedger';
+import AnalysisResults from '@/components/AnalysisResults';
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'logs' | 'bounties' | 'reputation'>('logs');
+  const [activeTab, setActiveTab] = useState<'logs' | 'bounties' | 'reputation' | 'payments'>('logs');
 
   return (
     <div className="min-h-screen bg-page">
@@ -21,6 +23,14 @@ export default function Dashboard() {
           <div className="lg:col-span-1 space-y-6">
             <TriggerAgent />
             <ReputationScore />
+            <div className="border-2 border-black bg-card">
+              <div className="p-4 border-b-2 border-black">
+                <span className="text-xs uppercase tracking-wide text-gray-600">Latest Analysis</span>
+              </div>
+              <div className="p-4">
+                <AnalysisResults />
+              </div>
+            </div>
           </div>
 
           <div className="lg:col-span-3">
@@ -53,12 +63,22 @@ export default function Dashboard() {
                 >
                   Reputation
                 </button>
+                <button
+                  onClick={() => setActiveTab('payments')}
+                  className={`px-6 py-4 text-sm transition-colors ${activeTab === 'payments'
+                      ? 'bg-black text-white border-b-2 border-black -mb-0.5'
+                      : 'bg-white text-black hover:bg-gray-50'
+                    }`}
+                >
+                  Payments
+                </button>
               </div>
 
               <div className="p-8">
                 {activeTab === 'logs' && <AgentLogs />}
                 {activeTab === 'bounties' && <BountiesView />}
                 {activeTab === 'reputation' && <ReputationScore />}
+                {activeTab === 'payments' && <PaymentLedger />}
               </div>
             </div>
           </div>
