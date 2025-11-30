@@ -58,7 +58,7 @@ export async function GET() {
       const bounties = (data.bounties || []).map(normalizeBounty);
       return NextResponse.json({
         bounties,
-        source: 'agent',
+        source: 'on-chain',
         count: bounties.length
       });
     }
@@ -68,54 +68,11 @@ export async function GET() {
     console.error('Error fetching bounties from agent API:', error);
   }
 
-  try {
-    const bountiesPath = join(process.cwd(), '..', 'agent', 'bounties', 'mock_bounties.json');
-    const fileContent = await readFile(bountiesPath, 'utf-8');
-    const rawBounties = JSON.parse(fileContent);
-    const bounties = rawBounties.map(normalizeBounty);
-    source = 'file';
-    return NextResponse.json({
-      bounties,
-      source,
-      count: bounties.length,
-      warning: error ? `Agent offline: ${error}` : undefined
-    });
-  } catch {
-
-  }
-
-  const mockBounties: Bounty[] = [
-    {
-      id: 1,
-      bounty_type: 'wallet_intelligence',
-      description: 'Analyze wallet 7xKXtg2... and identify if smart money',
-      reward: 1000000,
-      status: 'open',
-      skills: ['wallet_analysis', 'smart_money'],
-    },
-    {
-      id: 2,
-      bounty_type: 'token_screening',
-      description: 'Find top 5 tokens by smart money inflows (24h)',
-      reward: 2000000,
-      status: 'open',
-      skills: ['token_screening', 'flow_analysis'],
-    },
-    {
-      id: 3,
-      bounty_type: 'wallet_intelligence',
-      description: 'Calculate risk score for wallet Y based on transaction patterns',
-      reward: 1500000,
-      status: 'open',
-      skills: ['risk_analysis', 'pattern_recognition'],
-    },
-  ];
-
   return NextResponse.json({
-    bounties: mockBounties,
-    source: 'fallback',
-    count: mockBounties.length,
-    warning: error ? `Agent offline: ${error}` : 'Using fallback data'
+    bounties: [],
+    source: 'error',
+    count: 0,
+    warning: error ? `Agent offline: ${error}. Post bounties on-chain first.` : 'No bounties found. Post bounties on-chain to get started.'
   });
 }
 

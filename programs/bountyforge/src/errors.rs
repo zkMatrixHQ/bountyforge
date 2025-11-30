@@ -24,4 +24,6 @@ pub enum BountyForgeError {
     OracleVerificationFailed,
     #[msg("Oracle data is stale")]
     OracleDataStale,
+    #[msg("Invalid account owner")]
+    InvalidAccountOwner,
 }
