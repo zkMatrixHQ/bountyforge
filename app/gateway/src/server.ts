@@ -10,6 +10,24 @@ const PORT = process.env.GATEWAY_PORT || 3002;
 app.use(cors());
 app.use(express.json());
 
+interface PaymentRecord {
+    timestamp: string;
+    endpoint: string;
+    amount: number;
+    address?: string;
+    chain?: string;
+    status: 'success' | 'error';
+}
+
+const payments: PaymentRecord[] = [];
+
+function recordPayment(entry: PaymentRecord) {
+    payments.push(entry);
+    if (payments.length > 1000) {
+        payments.splice(0, payments.length - 1000);
+    }
+}
+
 function validatePayment(req: Request): { valid: boolean; amount?: number; error?: any } {
     const paymentHeader = req.headers['x-402-payment'] as string | undefined;
 
@@ -79,6 +97,15 @@ app.post('/api/nansen/current-balance', async (req: Request, res: Response) => {
         ]
     };
 
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/current-balance',
+        amount: payment.amount!,
+        address,
+        chain,
+        status: 'success'
+    });
+
     res.json(dummy);
 });
 
@@ -109,6 +136,15 @@ app.post('/api/nansen/transactions', async (req: Request, res: Response) => {
             usd_value: +(Math.random() * 50000).toFixed(2)
         }))
     };
+
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/transactions',
+        amount: payment.amount!,
+        address,
+        chain,
+        status: 'success'
+    });
 
     res.json(dummy);
 });
@@ -147,6 +183,15 @@ app.post('/api/nansen/pnl', async (req: Request, res: Response) => {
         }))
     };
 
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/pnl',
+        amount: payment.amount!,
+        address,
+        chain,
+        status: 'success'
+    });
+
     res.json(dummy);
 });
 
@@ -177,6 +222,15 @@ app.post('/api/nansen/pnl-summary', async (req: Request, res: Response) => {
         total_trades: Math.floor(Math.random() * 300),
         profitable_trades: Math.floor(Math.random() * 150)
     };
+
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/pnl-summary',
+        amount: payment.amount!,
+        address,
+        chain,
+        status: 'success'
+    });
 
     res.json(dummy);
 });
@@ -209,6 +263,15 @@ app.post('/api/nansen/labels', async (req: Request, res: Response) => {
         updated_at: new Date().toISOString()
     };
 
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/labels',
+        amount: payment.amount!,
+        address,
+        chain,
+        status: 'success'
+    });
+
     res.json(dummy);
 });
 
@@ -237,6 +300,13 @@ app.post('/api/nansen/smart-money-netflows', async (req: Request, res: Response)
         })),
         timestamp: Date.now()
     };
+
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/smart-money-netflows',
+        amount: payment.amount!,
+        status: 'success'
+    });
 
     res.json(dummy);
 });
@@ -278,6 +348,14 @@ app.post('/api/nansen/token-screener', async (req: Request, res: Response) => {
         timestamp: Date.now()
     };
 
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/token-screener',
+        amount: payment.amount!,
+        chain,
+        status: 'success'
+    });
+
     res.json(dummy);
 });
 
@@ -313,6 +391,15 @@ app.post('/api/nansen/flows', async (req: Request, res: Response) => {
         total: Math.min(per_page, 5),
         timestamp: Date.now()
     };
+
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/flows',
+        amount: payment.amount!,
+        address,
+        chain,
+        status: 'success'
+    });
 
     res.json(dummy);
 });
@@ -351,7 +438,30 @@ app.post('/api/nansen/flow-intelligence', async (req: Request, res: Response) =>
         updated_at: new Date().toISOString()
     };
 
+    recordPayment({
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/nansen/flow-intelligence',
+        amount: payment.amount!,
+        chain,
+        status: 'success'
+    });
+
     res.json(dummy);
+});
+
+app.get('/api/payments', (req: Request, res: Response) => {
+    const limitParam = req.query.limit as string | undefined;
+    const limit = Math.max(1, Math.min(parseInt(limitParam || '100', 10) || 100, 500));
+
+    const total = payments.length;
+    const total_amount = payments.reduce((sum, p) => sum + p.amount, 0);
+    const recent = payments.slice(-limit).reverse();
+
+    res.json({
+        payments: recent,
+        total,
+        total_amount
+    });
 });
 
 app.get('/health', (req: Request, res: Response) => {
