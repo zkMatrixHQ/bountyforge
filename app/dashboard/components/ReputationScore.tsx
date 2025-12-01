@@ -13,6 +13,7 @@ interface ReputationResponse {
   reputation: Reputation;
   agent_address?: string;
   message?: string;
+  has_reputation?: boolean;
 }
 
 export default function ReputationScore() {
@@ -20,6 +21,8 @@ export default function ReputationScore() {
   const [agentAddress, setAgentAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [reputationMessage, setReputationMessage] = useState<string | null>(null);
 
   const copyAddress = async () => {
     if (!agentAddress) return;
@@ -39,24 +42,47 @@ export default function ReputationScore() {
     }
   };
 
-  useEffect(() => {
-    fetchReputation();
-    const interval = setInterval(fetchReputation, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchReputation = async () => {
+  const fetchReputation = async (showRefreshing = false) => {
+    if (showRefreshing) {
+      setIsRefreshing(true);
+    }
     try {
       const response = await fetch('/api/reputation');
       if (response.ok) {
         const data: ReputationResponse = await response.json();
         setReputation(data.reputation);
         setAgentAddress(data.agent_address || null);
+        setReputationMessage(data.message || null);
       }
     } catch {
     } finally {
       setIsLoading(false);
+      if (showRefreshing) {
+        setIsRefreshing(false);
+      }
     }
+  };
+
+  useEffect(() => {
+    fetchReputation();
+    const interval = setInterval(fetchReputation, 10000);
+
+    const handleAgentComplete = () => {
+      setTimeout(() => {
+        fetchReputation(true);
+      }, 2000);
+    };
+
+    window.addEventListener('agent-complete', handleAgentComplete);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('agent-complete', handleAgentComplete);
+    };
+  }, []);
+
+  const handleManualRefresh = () => {
+    fetchReputation(true);
   };
 
   const formatUSDC = (lamports: number) => {
@@ -88,25 +114,45 @@ export default function ReputationScore() {
       <div className="p-4 border-b-2 border-black">
         <div className="flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Reputation</span>
-          {agentAddress && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={copyAddress}
-              className="text-xs font-mono text-gray-400 hover:text-black transition-colors cursor-pointer flex items-center gap-1"
-              title="Click to copy"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="text-xs text-gray-400 hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              title="Refresh reputation"
             >
-              {copied ? (
+              {isRefreshing ? (
                 <>
-                  <span className="text-green-600">✓</span>
-                  <span className="text-green-600">Copied</span>
+                  <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  <span>Refreshing...</span>
                 </>
               ) : (
                 <>
-                  {truncateAddress(agentAddress)}
-                  <span className="text-gray-300">⎘</span>
+                  <span>↻</span>
+                  <span>Refresh</span>
                 </>
               )}
             </button>
-          )}
+            {agentAddress && (
+              <button
+                onClick={copyAddress}
+                className="text-xs font-mono text-gray-400 hover:text-black transition-colors cursor-pointer flex items-center gap-1"
+                title="Click to copy"
+              >
+                {copied ? (
+                  <>
+                    <span className="text-green-600">✓</span>
+                    <span className="text-green-600">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    {truncateAddress(agentAddress)}
+                    <span className="text-gray-300">⎘</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -146,6 +192,21 @@ export default function ReputationScore() {
           </div>
         </div>
       )}
+
+      <div className="p-3 border-t border-gray-200 bg-gray-50">
+        <div className="text-xs text-gray-500 leading-relaxed">
+          {reputationMessage ? (
+            <>
+              <p className="mb-1">ℹ️ {reputationMessage}</p>
+            </>
+          ) : (
+            <>
+              <p className="mb-1">ℹ️ Reputation updates when bounties are <strong>settled</strong>, not just submitted.</p>
+              <p>If you just ran the agent, settlement may take a few moments.</p>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -44,6 +44,10 @@ def get_reputation():
     agent_address = request.args.get('address')
     if not agent_address:
         agent_address = service.signing_address
+        if not agent_address:
+            agent_address = service.get_signing_address_from_keypair()
+            if agent_address:
+                service.signing_address = agent_address
     
     if not agent_address:
         return jsonify({"reputation": {"score": 0, "successful_bounties": 0, "failed_bounties": 0, "total_earned": 0}})
@@ -67,6 +71,11 @@ def get_status():
 def get_wallet():
     cdp_address = service.wallet_address
     signing_address = service.signing_address
+    
+    if not signing_address:
+        signing_address = service.get_signing_address_from_keypair()
+        if signing_address:
+            service.signing_address = signing_address
     
     if cdp_address or signing_address:
         return jsonify({

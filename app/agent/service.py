@@ -143,13 +143,46 @@ class AgentService:
         return {
             "is_running": self.is_running,
             "bounties_count": len(self.current_bounties),
-            "wallet_address": self.wallet_address,
-            "last_analysis": analysis
+            "logs_count": len(self.log_buffer),
+            "wallet_address": self.wallet_address
         }
+    
+    def get_wallet_address(self) -> Optional[str]:
+        if self.agent and self.agent.wallet:
+            address = self.agent.wallet.get_address()
+            if address:
+                self.wallet_address = address
+            return address or self.wallet_address
+        return self.wallet_address
+    
+    def get_signing_address_from_keypair(self) -> Optional[str]:
+        """Get signing address from persisted keypair file, even if agent isn't running"""
+        try:
+            from solders.keypair import Keypair as SoldersKeypair
+            import json
+            
+            keypair_path = Path(__file__).parent / ".agent_keypair.json"
+            
+            if keypair_path.exists():
+                with open(keypair_path, 'r') as f:
+                    keypair_data = json.load(f)
+                    secret_key = bytes(keypair_data)
+                    if len(secret_key) == 64:
+                        keypair = SoldersKeypair.from_bytes(secret_key)
+                        return str(keypair.pubkey())
+        except Exception as e:
+            print(f"Error reading signing address from keypair: {e}")
+        return None
     
     async def get_reputation(self, agent_address: str) -> Optional[Dict]:
         if not self.agent:
-            return None
+            try:
+                from contract import BountyForgeClient
+                contract = BountyForgeClient()
+                return await contract.get_reputation(agent_address)
+            except Exception as e:
+                print(f"Error creating contract client for reputation query: {e}")
+                return None
         return await self.agent.contract.get_reputation(agent_address)
 
 

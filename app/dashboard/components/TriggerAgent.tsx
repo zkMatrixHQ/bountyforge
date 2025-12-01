@@ -22,6 +22,7 @@ export default function TriggerAgent() {
       if (data.success) {
         setStatus('success');
         setLastRun(new Date().toLocaleTimeString());
+        window.dispatchEvent(new CustomEvent('agent-complete'));
       } else {
         setStatus('error');
       }
@@ -55,14 +56,14 @@ export default function TriggerAgent() {
           onClick={handleTrigger}
           disabled={isRunning}
           className={`w-full py-3 text-sm font-medium transition-all ${isRunning
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
             : 'bg-black text-white hover:bg-gray-800 active:scale-[0.98]'
             }`}
         >
           {isRunning ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-              Processing...
+            <span className="flex items-center justify-center gap-3">
+              <span className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              <span>Running Agent...</span>
             </span>
           ) : (
             '▶ Run Agent'

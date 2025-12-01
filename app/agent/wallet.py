@@ -3,6 +3,7 @@ import asyncio
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
+import fcntl
 
 try:
     from cdp import CdpClient
@@ -89,23 +90,56 @@ class CDPWallet:
         try:
             from solders.keypair import Keypair as SoldersKeypair
             import json
+            import fcntl
             
             keypair_path = Path(__file__).parent / ".agent_keypair.json"
             
-            if keypair_path.exists():
-                with open(keypair_path, 'r') as f:
-                    keypair_data = json.load(f)
-                    keypair_bytes = bytes(keypair_data)
-                    if len(keypair_bytes) == 64:
-                        return SoldersKeypair.from_bytes(keypair_bytes)
+            # Use file locking to prevent race conditions
+            def read_keypair():
+                if keypair_path.exists():
+                    with open(keypair_path, 'r') as f:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_SH)  # Shared lock for reading
+                        try:
+                            keypair_data = json.load(f)
+                            secret_key = bytes(keypair_data)
+                            if len(secret_key) == 64:
+                                return SoldersKeypair.from_bytes(secret_key)
+                            else:
+                                print(f"Invalid keypair file (got {len(secret_key)} bytes, expected 64). Will recreate...")
+                                return None
+                        finally:
+                            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                return None
             
+            def write_keypair(keypair):
+                with open(keypair_path, 'w') as f:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)  # Exclusive lock for writing
+                    try:
+                        secret = keypair.secret()
+                        if len(secret) != 64:
+                            raise ValueError(f"Keypair secret() returned {len(secret)} bytes, expected 64")
+                        json.dump(list(secret), f)
+                        f.flush()
+                        os.fsync(f.fileno())  # Ensure data is written to disk
+                    finally:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            
+            # Try to read existing keypair
+            keypair = read_keypair()
+            if keypair:
+                return keypair
+            
+            # Create new keypair if file doesn't exist or is invalid
+            print("Creating new signing keypair...")
             keypair = SoldersKeypair()
-            full_keypair_bytes = bytes(keypair)
-            with open(keypair_path, 'w') as f:
-                json.dump(list(full_keypair_bytes), f)
-            print(f"Created signing keypair: {keypair.pubkey()}")
-            print(f"Fund this address with SOL for fees: {keypair.pubkey()}")
+            write_keypair(keypair)
+            print(f"Created new signing keypair: {keypair.pubkey()}")
+            print(f"IMPORTANT: Fund this address with SOL for transaction fees!")
+            print(f"   Address: {keypair.pubkey()}")
+            print(f"   Keypair saved to: {keypair_path}")
             return keypair
         except Exception as e:
             print(f"Error with signing keypair: {e}")
+            import traceback
+            traceback.print_exc()
             return None
